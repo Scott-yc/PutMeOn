@@ -1,0 +1,24 @@
+# Optional free beta deployment. No service is created until you deploy this file.
+services:
+  - type: web
+    name: putmeon-beta
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Database__Provider
+        value: Postgres
+      - key: ConnectionStrings__Database
+        sync: false
+      - key: Auth__CodeSecret
+        generateValue: true
+      - key: Email__Mode
+        value: Brevo
+      - key: Email__ApiKey
+        sync: false
+      - key: Email__From
+        sync: false

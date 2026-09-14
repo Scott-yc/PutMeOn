@@ -1,0 +1,31 @@
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 30px;
+  width: min(450px, calc(100% - 32px));
+  color: #13223d;
+  box-shadow: 0 20px 80px #0003;
+}
+
+dialog::backdrop {
+  background: #15202db3;
+}
+
+.close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  padding: 3px 10px;
+}
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.contact-row span {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

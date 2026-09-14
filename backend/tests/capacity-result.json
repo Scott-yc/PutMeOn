@@ -1,0 +1,11 @@
+{
+  "fixture": "500 synthetic registered accounts, 1000 active posts, SQLite on local development machine",
+  "requests": 200,
+  "concurrentRequests": 10,
+  "failed": 0,
+  "elapsedMs": 288,
+  "p50Ms": 12,
+  "p95Ms": 47,
+  "maxMs": 56,
+  "limitations": "Local read workload only. Not 500 simultaneous users, not a free-cloud SLA or a production capacity guarantee."
+}

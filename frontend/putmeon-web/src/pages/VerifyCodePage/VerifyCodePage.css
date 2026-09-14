@@ -1,0 +1,211 @@
+.verify-page {
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+
+  background: #f5f9ff;
+}
+
+.verify-container {
+  width: 100%;
+  max-width: 420px;
+
+  padding: 55px 20px;
+}
+
+/* Logo */
+
+.logo {
+  text-align: center;
+
+  font-size: 42px;
+  font-weight: 700;
+
+  letter-spacing: -1px;
+}
+
+.logo span {
+  color: #1769ff;
+}
+
+/* Tagline */
+
+.tagline {
+  text-align: center;
+
+  color: #64748b;
+
+  margin-top: 5px;
+  margin-bottom: 30px;
+}
+
+/* Card */
+
+.verify-card {
+  background: #ffffff;
+
+  padding: 30px;
+
+  border-radius: 12px;
+
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.verify-card h2 {
+  text-align: center;
+
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+/* Email message */
+
+.verify-message {
+  text-align: center;
+
+  font-size: 14px;
+  color: #334155;
+
+  margin: 0;
+}
+
+.verify-email {
+  text-align: center;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  margin-top: 4px;
+  margin-bottom: 24px;
+}
+
+/* 6 digit inputs */
+
+.code-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+
+  margin-bottom: 18px;
+}
+
+.code-inputs input {
+  width: 44px;
+  height: 48px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+
+  text-align: center;
+
+  font-size: 20px;
+  font-weight: 600;
+
+  outline: none;
+}
+
+.code-inputs input:focus {
+  border-color: #1769ff;
+
+  box-shadow: 0 0 0 3px rgba(23, 105, 255, 0.1);
+}
+
+/* Continue */
+
+.continue-button {
+  width: 100%;
+
+  padding: 12px;
+
+  border: none;
+  border-radius: 6px;
+
+  background: #1769ff;
+  color: white;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.continue-button:hover {
+  background: #0f5ae0;
+  transform: translateY(-1px);
+}
+
+.continue-button:active {
+  transform: translateY(0);
+}
+
+.continue-button:disabled {
+  background: #93b7ff;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.continue-button:disabled:hover {
+  background: #93b7ff;
+  transform: none;
+}
+
+/* Resend */
+
+.resend-text {
+  text-align: center;
+
+  margin-top: 18px;
+  margin-bottom: 0;
+
+  font-size: 13px;
+
+  color: #334155;
+}
+
+.resend-button {
+  border: none;
+
+  background: none;
+
+  padding: 0;
+
+  color: #1769ff;
+
+  font-size: 13px;
+
+  text-decoration: underline;
+
+  cursor: pointer;
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+  .verify-container {
+    padding: 35px 18px;
+  }
+
+  .logo {
+    font-size: 36px;
+  }
+
+  .verify-card {
+    padding: 24px 18px;
+  }
+
+  .code-inputs {
+    gap: 7px;
+  }
+
+  .code-inputs input {
+    width: 39px;
+    height: 46px;
+
+    font-size: 18px;
+  }
+}

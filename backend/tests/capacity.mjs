@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
+const base = process.env.API_URL ?? 'http://127.0.0.1:5081';
+const headers = { 'Content-Type':'application/json', 'X-PutMeOn-Request':'1' };
+const email = 'capacity-1@example.com';
+const codeResponse = await fetch(base+'/api/auth/code',{method:'POST',headers,body:JSON.stringify({email})});
+assert.equal(codeResponse.status,200); const {developmentCode} = await codeResponse.json();
+const login = await fetch(base+'/api/auth/verify',{method:'POST',headers,body:JSON.stringify({email,code:developmentCode})});
+assert.equal(login.status,204); headers.Cookie = login.headers.get('set-cookie').split(';')[0];
+const first = await (await fetch(base+'/api/state',{headers})).json();
+assert.equal(first.posts.length,30); assert.equal(first.hasMore,true);
+const second = await (await fetch(base+'/api/state?page=1',{headers})).json();
+assert.equal(second.posts.some(p=>first.posts.some(f=>f.id===p.id)),false);
+const durations=[];let next=0;let failed=0;const total=200;const concurrency=10;const start=performance.now();
+await Promise.all(Array.from({length:concurrency},async()=>{while(next<total){const index=next++;const time=performance.now();const res=await fetch(base+`/api/state?page=${index%10}&trade=${index%2===0?'Carpenter':'Electrician'}`,{headers});if(!res.ok)failed++;await res.arrayBuffer();durations.push(performance.now()-time);}}));
+durations.sort((a,b)=>a-b);
+const result={fixture:'500 synthetic registered accounts, 1000 active posts, SQLite on local development machine',requests:total,concurrentRequests:concurrency,failed,elapsedMs:Math.round(performance.now()-start),p50Ms:Math.round(durations[Math.floor(total*.5)]),p95Ms:Math.round(durations[Math.floor(total*.95)]),maxMs:Math.round(durations.at(-1)),limitations:'Local read workload only. Not 500 simultaneous users, not a free-cloud SLA or a production capacity guarantee.'};
+writeFileSync(new URL('./capacity-result.json',import.meta.url),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result,null,2));assert.equal(failed,0);

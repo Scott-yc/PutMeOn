@@ -1,0 +1,16 @@
+.tools
+.local-app
+**/node_modules
+**/bin
+**/obj
+**/dist
+**/archive
+**/*.db*
+**/appsettings.Local.json
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.pfx
+**/*.p12
+.git
