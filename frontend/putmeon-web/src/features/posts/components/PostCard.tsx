@@ -29,7 +29,7 @@ export default function PostCard({
           <h2>{post.trade}</h2>
           {post.companyName && <p className="company-name">{post.companyName}</p>}
           <DetailRow icon="location">{post.location}</DetailRow>
-          <p>$ {post.rate}/hr</p>
+          <DetailRow icon="money">${post.rate}/hr</DetailRow>
           <DetailRow icon="calendar">{formatDateRange(post.from, post.to)}</DetailRow>
         </div>
         <div className="expiry">

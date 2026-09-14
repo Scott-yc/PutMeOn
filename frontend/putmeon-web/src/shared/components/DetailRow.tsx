@@ -4,7 +4,7 @@ export default function DetailRow({
   icon,
   children,
 }: {
-  icon: 'location' | 'calendar';
+  icon: 'location' | 'calendar' | 'money';
   children: ReactNode;
 }) {
   return (
@@ -24,6 +24,12 @@ export default function DetailRow({
           <>
             <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" />
             <circle cx="12" cy="10" r="2.5" />
+          </>
+        ) : icon === 'money' ? (
+          <>
+            <rect x="2" y="5" width="20" height="14" rx="2" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M6 10v4M18 10v4" />
           </>
         ) : (
           <>

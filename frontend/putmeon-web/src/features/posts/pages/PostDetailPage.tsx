@@ -90,7 +90,7 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
             <Badge kind={post.kind} />
             <h1>{post.trade}</h1>
             <DetailRow icon="location">{post.location}</DetailRow>
-            <p>$ {post.rate}/hr</p>
+            <DetailRow icon="money">${post.rate}/hr</DetailRow>
             <DetailRow icon="calendar">{formatDateRange(post.from, post.to)}</DetailRow>
             <p className="expiry">
               {expired ? 'Expired' : `Expires in ${daysRemaining(post)} days`}
