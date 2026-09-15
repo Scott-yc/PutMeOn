@@ -123,6 +123,15 @@
   margin-top: 5px;
 }
 
+.post-list .post-card .description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 .description {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
