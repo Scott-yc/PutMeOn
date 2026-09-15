@@ -15,6 +15,7 @@ const empty: ApiSnapshot = {
   posts: [],
   hasMore: false,
   page: 0,
+  unreadInterestCount: 0,
 };
 const defaultFilters: PostFilters = { trade: '', location: '', kind: 'all' };
 
@@ -73,9 +74,16 @@ export function ApiProvider({ children }: { children: ReactNode }) {
           setError('Could not refresh. Please try again.'),
         );
     };
+    const visible = () => {
+      if (document.visibilityState === 'visible') focus();
+    };
+    const poll = window.setInterval(visible, 60000);
+    document.addEventListener('visibilitychange', visible);
     window.addEventListener('focus', focus);
     return () => {
       controller.abort();
+      window.clearInterval(poll);
+      document.removeEventListener('visibilitychange', visible);
       window.removeEventListener('focus', focus);
     };
   }, [refresh, key]);
@@ -154,6 +162,15 @@ export function ApiProvider({ children }: { children: ReactNode }) {
       ),
     deletePost: (id: string) => run(() => apiRequest(`/posts/${id}`, { method: 'DELETE' })),
     applyToPost: (id: string) => run(() => apiRequest(`/posts/${id}/interest`, { method: 'POST' })),
+    markInterestsViewed: (id: string) =>
+      run(() =>
+        apiRequest(`/posts/${id}/interests/viewed`, {
+          method: 'POST',
+          body: JSON.stringify({
+            applicantIds: snapshot.posts.find((p) => p.id === id)?.interested ?? [],
+          }),
+        }),
+      ),
     loadContact: (id: string, personId: string) =>
       run(async () => {
         const profile = await apiRequest<Profile>(`/posts/${id}/contacts/${personId}`);
@@ -209,6 +226,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
         busy,
         hasMore: snapshot.hasMore,
         postFilters: filters,
+        unreadInterestCount: snapshot.unreadInterestCount,
         ...actions,
       }}
     >

@@ -1,7 +1,7 @@
 import { formatDateRange } from '../../../shared/formatting/dates';
 import DetailRow from '../../../shared/components/DetailRow';
 import { contactForPost } from '../../../domain/contactAccess';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDemo } from '../../../state/useDemo';
 import ContactDialog from '../../../shared/components/ContactDialog';
@@ -10,9 +10,10 @@ import { daysRemaining } from '../../../domain/postExpiry';
 
 export default function PostDetailPage({ interested = false }: { interested?: boolean }) {
   const { id } = useParams();
-  const { database, now, user, busy, loadContact, applyToPost } = useDemo();
+  const { database, now, user, busy, loadContact, applyToPost, markInterestsViewed } = useDemo();
   const [error, setError] = useState('');
   const [contactId, setContactId] = useState<string | null>(null);
+  const markedViewed = useRef<string | null>(null);
   async function openContact(personId: string) {
     if (!id) return;
     const result = await loadContact(id, personId);
@@ -23,6 +24,23 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
     setContactId(personId);
   }
   const post = database.posts.find((p) => p.id === id);
+  useEffect(() => {
+    if (!interested) {
+      markedViewed.current = null;
+      return;
+    }
+    if (!user || !post || post.ownerId !== user.id || !id) return;
+    const receipt = id + ':' + post.interested.join(',');
+    if (
+      post.interested.length <= (post.viewedInterestCount ?? 0) ||
+      markedViewed.current === receipt
+    )
+      return;
+    markedViewed.current = receipt;
+    void Promise.resolve(markInterestsViewed(id)).then((result) => {
+      if (!result.ok) setError(result.error);
+    });
+  }, [id, interested, user, post, markInterestsViewed]);
   if (!post || !user)
     return (
       <main>

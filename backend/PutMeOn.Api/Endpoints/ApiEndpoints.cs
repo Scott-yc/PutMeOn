@@ -29,6 +29,7 @@ public static class ApiEndpoints
                 profiles = Array.Empty<object>(),
                 posts = Array.Empty<object>(),
                 hasMore = false,
+                unreadInterestCount = 0,
                 page = 0
             }) : Results.Ok(await posts.StateAsync(user, mode, postId, trade, location, kind, page ?? 0, ct));
         });
@@ -37,6 +38,7 @@ public static class ApiEndpoints
         app.MapPut("/api/posts/{id}", async (string id, PostRequest r, AuthService auth, PostService posts, HttpContext h, CancellationToken ct) => Results.Ok(new { id = await posts.SavePostAsync(await User(auth, h, ct), id, Validate(r), ct) }));
         app.MapDelete("/api/posts/{id}", async (string id, AuthService auth, PostService posts, HttpContext h, CancellationToken ct) => { await posts.DeleteAsync(await User(auth, h, ct), id, ct); return Results.NoContent(); });
         app.MapPost("/api/posts/{id}/interest", async (string id, AuthService auth, PostService posts, HttpContext h, CancellationToken ct) => { await posts.ApplyAsync(await User(auth, h, ct), id, ct); return Results.NoContent(); });
+        app.MapPost("/api/posts/{id}/interests/viewed", async (string id, ViewedInterestsRequest r, AuthService auth, PostService posts, HttpContext h, CancellationToken ct) => { Validate(r); await posts.MarkInterestsViewedAsync(await User(auth, h, ct), id, r.ApplicantIds, ct); return Results.NoContent(); });
         app.MapGet("/api/posts/{id}/contacts/{personId}", async (string id, string personId, AuthService auth, PostService posts, HttpContext h, CancellationToken ct) => Results.Ok(await posts.ContactAsync(await User(auth, h, ct), id, personId, ct)));
     }
 }

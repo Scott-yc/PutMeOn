@@ -7,7 +7,7 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
 {
     private long Now => clock.GetUtcNow().ToUnixTimeMilliseconds();
     public static object ProfileDto(Account a, bool contact = false, string? company = null) => new { a.Id, email = contact ? a.Email : "", a.Name, phone = contact ? a.Phone : "", a.Trade, a.Location, companyName = company ?? a.CompanyName };
-    public static object PostDto(JobPost p, string viewerId) => new { p.Id, p.OwnerId, p.Kind, p.Trade, p.Location, p.CompanyName, p.Rate, p.From, p.To, p.Description, createdAt = DateTimeOffset.FromUnixTimeMilliseconds(p.CreatedAt).ToString("O"), p.Revision, interested = p.Applications.Where(x => p.OwnerId == viewerId || x.ApplicantId == viewerId).Select(x => x.ApplicantId).ToArray() };
+    public static object PostDto(JobPost p, string viewerId) => new { p.Id, p.OwnerId, p.Kind, p.Trade, p.Location, p.CompanyName, p.Rate, p.From, p.To, p.Description, createdAt = DateTimeOffset.FromUnixTimeMilliseconds(p.CreatedAt).ToString("O"), p.Revision, viewedInterestCount = p.OwnerId == viewerId ? p.Applications.Count(x => x.Viewed) : 0, interested = p.Applications.Where(x => p.OwnerId == viewerId || x.ApplicantId == viewerId).Select(x => x.ApplicantId).ToArray() };
     public async Task<object> StateAsync(Account account, string? mode, string? postId, string? trade, string? location, string? kind, int page, CancellationToken ct)
     {
         var now = Now;
@@ -43,6 +43,7 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
             user = account.Name.Length > 0 ? ProfileDto(account, true) : null,
             profiles = people.Values.Select(a => ProfileDto(a, a.Id == account.Id)),
             posts = posts.Select(p => PostDto(p, account.Id)),
+            unreadInterestCount = await db.Applications.CountAsync(x => !x.Viewed && x.Post.OwnerId == account.Id && x.Post.ExpiresAt > now, ct),
             hasMore,
             page
         };
@@ -116,6 +117,13 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
         db.Applications.Add(new ApplicationEntry { PostId = id, ApplicantId = a.Id, CreatedAt = now });
         p.Revision++;
         await db.SaveChangesAsync(ct);
+    }
+    public async Task MarkInterestsViewedAsync(Account a, string id, string[] applicantIds, CancellationToken ct)
+    {
+        await OwnedAsync(a, id, ct);
+        if (applicantIds.Length > 2000) throw new ApiError(400, "Too many applicants.");
+        await db.Applications.Where(x => x.PostId == id && applicantIds.Contains(x.ApplicantId) && !x.Viewed)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Viewed, true), ct);
     }
     public async Task<object> ContactAsync(Account a, string id, string personId, CancellationToken ct)
     {

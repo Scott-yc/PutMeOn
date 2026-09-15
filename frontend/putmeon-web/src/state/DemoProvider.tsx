@@ -101,6 +101,8 @@ export function DemoProvider({
       execute((db) => commands.deletePost(db, id, user?.id ?? '', Date.now())),
     applyToPost: (id: string) =>
       execute((db) => commands.applyToPost(db, id, user?.id ?? '', Date.now())),
+    markInterestsViewed: (id: string) =>
+      execute((db) => commands.markInterestsViewed(db, id, user?.id ?? '', Date.now())),
     saveProfile: (draft: commands.ProfileDraft) =>
       execute((db) => commands.saveProfile(db, draft, email, crypto.randomUUID())),
   };
@@ -114,6 +116,15 @@ export function DemoProvider({
         busy: false,
         hasMore: false,
         postFilters: { trade: '', location: '', kind: 'all' },
+        unreadInterestCount: user
+          ? database.posts
+              .filter((post) => post.ownerId === user.id && post.kind === 'looking')
+              .reduce(
+                (total, post) =>
+                  total + Math.max(0, post.interested.length - (post.viewedInterestCount ?? 0)),
+                0,
+              )
+          : 0,
         requestCode: () => ({ ok: true, developmentCode: '482913' }),
         verifyCode: (address, code) => {
           if (!verifyDemoCode(code)) return { ok: false, error: 'Incorrect demo code.' };

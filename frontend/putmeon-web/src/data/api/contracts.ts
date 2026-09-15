@@ -4,6 +4,7 @@ export interface ApiSnapshot extends Database {
   user: Profile | null;
   hasMore: boolean;
   page: number;
+  unreadInterestCount: number;
 }
 export interface PostFilters {
   trade: string;

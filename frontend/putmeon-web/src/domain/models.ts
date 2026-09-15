@@ -22,6 +22,7 @@ export interface Post {
   description: string;
   createdAt: string;
   interested: string[];
+  viewedInterestCount?: number;
   revision?: number;
 }
 export interface Database {

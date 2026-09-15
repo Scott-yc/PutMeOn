@@ -62,6 +62,15 @@ test('duplicate applications are idempotent and self-application is rejected', (
   assert.equal(commands.applyToPost(db, 'post', 'applicant', now), db);
   assert.throws(() => commands.applyToPost(db, 'post', 'owner', now), /cannot apply/);
 });
+test('viewing applications clears only the owned post unread count', () => {
+  const db = commands.applyToPost(fixture(), 'post', 'applicant', now);
+  const viewed = commands.markInterestsViewed(db, 'post', 'owner', now);
+  assert.equal(viewed.posts[0].viewedInterestCount, 1);
+  assert.throws(
+    () => commands.markInterestsViewed(db, 'post', 'applicant', now),
+    /Only the poster/,
+  );
+});
 test('expired posts cannot be edited or applied to', () => {
   const expired = now + 7 * 86400000;
   assert.throws(() => commands.applyToPost(fixture(), 'post', 'applicant', expired), /expired/);

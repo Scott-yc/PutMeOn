@@ -43,6 +43,7 @@ public sealed class JobPost
 }
 public sealed class ApplicationEntry
 {
+    public bool Viewed { get; set; }
     public string PostId { get; set; } = "";
     public string ApplicantId { get; set; } = "";
     public long CreatedAt

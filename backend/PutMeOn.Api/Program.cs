@@ -48,8 +48,16 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDb>();
     if (provider == "Sqlite" && development)
+    {
         await db.Database.EnsureCreatedAsync();
-    else if (args.Contains("--migrate"))
+        await db.Database.OpenConnectionAsync();
+        await using var schema = db.Database.GetDbConnection().CreateCommand();
+        schema.CommandText = "SELECT COUNT(*) FROM pragma_table_info('Applications') WHERE name = 'Viewed'";
+        if (Convert.ToInt32(await schema.ExecuteScalarAsync()) == 0)
+            await db.Database.ExecuteSqlRawAsync("ALTER TABLE Applications ADD COLUMN Viewed INTEGER NOT NULL DEFAULT 0");
+        await db.Database.CloseConnectionAsync();
+    }
+    else if (provider == "Postgres")
         await db.Database.MigrateAsync();
     if (args.Contains("--seed-capacity"))
     {

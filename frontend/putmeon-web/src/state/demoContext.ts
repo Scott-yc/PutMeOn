@@ -13,12 +13,14 @@ interface State {
   busy: boolean;
   hasMore: boolean;
   postFilters: PostFilters;
+  unreadInterestCount: number;
   requestCode: (email: string) => MaybeAsync<ActionResult>;
   verifyCode: (email: string, code: string) => MaybeAsync<ActionResult>;
   logout: () => MaybeAsync<void>;
   savePost: (draft: PostDraft, id?: string) => MaybeAsync<ActionResult>;
   deletePost: (id: string) => MaybeAsync<ActionResult>;
   applyToPost: (id: string) => MaybeAsync<ActionResult>;
+  markInterestsViewed: (id: string) => MaybeAsync<ActionResult>;
   saveProfile: (draft: ProfileDraft) => MaybeAsync<ActionResult>;
   loadContact: (postId: string, personId: string) => MaybeAsync<ActionResult>;
   searchPosts: (filters: PostFilters) => void;

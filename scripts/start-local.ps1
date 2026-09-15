@@ -27,7 +27,7 @@ $app.Id | Set-Content (Join-Path $runtimeDir 'process.id')
 for ($attempt = 0; $attempt -lt 30; $attempt++) {
   if ($app.HasExited) { throw 'Local app failed to start. See .local-app/stderr.log.' }
   try {
-    $response = Invoke-WebRequest 'http://127.0.0.1:5173/api/health' -TimeoutSec 2
+    $response = Invoke-WebRequest 'http://127.0.0.1:5173/api/health' -UseBasicParsing -TimeoutSec 2
     if ($response.StatusCode -eq 200) { Write-Host 'PutMeOn is ready: http://127.0.0.1:5173 (runs in background).'; exit 0 }
   } catch { Start-Sleep -Milliseconds 300 }
 }

@@ -87,6 +87,23 @@ export function applyToPost(
   };
 }
 
+export function markInterestsViewed(
+  database: Database,
+  id: string,
+  actorId: string,
+  now: number,
+): Database {
+  const post = requireOwner(database, id, actorId, now);
+  if (post.kind !== 'looking') return database;
+  if ((post.viewedInterestCount ?? 0) === post.interested.length) return database;
+  return {
+    ...database,
+    posts: database.posts.map((item) =>
+      item.id === id ? { ...item, viewedInterestCount: item.interested.length } : item,
+    ),
+  };
+}
+
 export function saveProfile(
   database: Database,
   draft: ProfileDraft,

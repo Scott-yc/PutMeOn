@@ -126,11 +126,16 @@ export default function FeedPage({ mine = false }: { mine?: boolean }) {
                   <Link
                     className="interest-link"
                     to={`/posts/${post.id}/interested`}
-                    aria-label={`View ${post.interested.length} interested people`}
+                    aria-label={`View ${post.interested.length} interested people${post.interested.length > (post.viewedInterestCount ?? 0) ? ', new applications' : ''}`}
                   >
                     <span className="interest-count">{post.interested.length}</span>
                     <span className="interest-copy">
-                      <strong>Interested</strong>
+                      <strong className="interest-title">
+                        Interested
+                        {post.interested.length > (post.viewedInterestCount ?? 0) && (
+                          <span className="new-interest-dot" aria-hidden="true" />
+                        )}
+                      </strong>
                       <span>
                         {post.interested.length === 0
                           ? 'No applications yet'

@@ -2,7 +2,7 @@ import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
 import { useDemo } from '../state/useDemo';
 import ProfilePage from '../features/profile/pages/ProfilePage';
 export default function AppLayout() {
-  const { email, user } = useDemo();
+  const { email, user, unreadInterestCount } = useDemo();
   if (!email) return <Navigate to="/login" replace />;
   if (!user) return <ProfilePage />;
   return (
@@ -17,7 +17,17 @@ export default function AppLayout() {
         <nav aria-label="Main navigation">
           <NavLink to="/home">Home</NavLink>
           <NavLink to="/post">Post</NavLink>
-          <NavLink to="/my-posts">My Posts</NavLink>
+          <NavLink to="/my-posts" className="my-posts-nav">
+            <span>My Posts</span>
+            {unreadInterestCount > 0 && (
+              <span
+                className="notification-badge"
+                aria-label={`${unreadInterestCount} new ${unreadInterestCount === 1 ? 'application' : 'applications'}`}
+              >
+                {unreadInterestCount > 99 ? '99+' : unreadInterestCount}
+              </span>
+            )}
+          </NavLink>
           <NavLink to="/account">Account</NavLink>
         </nav>
         <Link to="/account" className="avatar" aria-label="Your account">

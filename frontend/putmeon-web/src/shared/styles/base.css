@@ -188,6 +188,33 @@ nav a {
   padding: 10px 0;
 }
 
+.my-posts-nav {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #e32636;
+  color: #fff;
+  box-shadow: 0 2px 5px #a30e2630;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 nav a.active {
   color: #075ce5;
   border-bottom: 2px solid #176bfa;

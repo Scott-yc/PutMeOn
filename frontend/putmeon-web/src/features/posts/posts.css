@@ -253,3 +253,17 @@
 .delete-confirm button {
   margin: 8px 8px 0 0;
 }
+
+.interest-title {
+  position: relative;
+  width: fit-content;
+}
+.new-interest-dot {
+  position: absolute;
+  top: -2px;
+  right: -10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e32636;
+}

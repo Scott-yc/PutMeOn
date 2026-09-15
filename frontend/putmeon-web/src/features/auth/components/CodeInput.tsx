@@ -35,8 +35,11 @@ export default function CodeInput({ value, onChange, invalid }: CodeInputProps) 
             aria-invalid={invalid}
             aria-describedby={invalid ? 'code-error' : undefined}
             type="text"
+            name={`verification-code-${index + 1}`}
             inputMode="numeric"
-            autoComplete={index === 0 ? 'one-time-code' : 'off'}
+            autoComplete="one-time-code"
+            autoCapitalize="none"
+            spellCheck={false}
             autoFocus={index === 0}
             pattern="[0-9]"
             required
