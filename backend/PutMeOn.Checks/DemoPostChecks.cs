@@ -36,10 +36,10 @@ static class DemoPostChecks
         var service = new PostService(db, rules, clock);
         foreach (var p in first)
         {
-            try { await service.ContactAsync(realOwner, p.Id, DemoPostIdentity.OwnerId, default); throw new Exception("Demo contact allowed."); } catch (ApiError e) when (e.Status == 403) { }
+            try { await new ContactService(db, clock).ContactAsync(realOwner, p.Id, DemoPostIdentity.OwnerId, default); throw new Exception("Demo contact allowed."); } catch (ApiError e) when (e.Status == 403) { }
             try { await service.ApplyAsync(realOwner, p.Id, default); throw new Exception("Demo application allowed."); } catch (ApiError e) when (e.Status == 403) { }
         }
-        var feed = System.Text.Json.JsonSerializer.SerializeToElement(await service.StateAsync(realOwner, "feed", null, null, null, null, 0, default));
+        var feed = System.Text.Json.JsonSerializer.SerializeToElement(await new FeedService(db, clock).StateAsync(realOwner, "feed", null, null, null, null, 0, default));
         if (feed.GetProperty("posts")[0].GetProperty("Id").GetString() != realPost.Id) throw new Exception("Samples displaced real posts.");
         if (!feed.GetProperty("posts")[1].GetProperty("isDemo").GetBoolean()) throw new Exception("Demo marker missing.");
         clock.Value = clock.Value.AddDays(7);

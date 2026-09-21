@@ -2,11 +2,11 @@ import { readPostForm } from '../../../shared/forms/readForm';
 import TradeOptions from '../../../shared/components/TradeOptions';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useDemo } from '../../../state/useDemo';
+import { useAppState } from '../../../state/useAppState';
 
 export default function PostFormPage() {
   const { id } = useParams();
-  const { database, user, busy, savePost } = useDemo();
+  const { database, user, busy, savePost } = useAppState();
   const navigate = useNavigate();
   const post = database.posts.find((p) => p.id === id);
   const [error, setError] = useState('');

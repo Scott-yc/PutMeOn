@@ -1,8 +1,8 @@
 import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
-import { useDemo } from '../state/useDemo';
+import { useAppState } from '../state/useAppState';
 import ProfilePage from '../features/profile/pages/ProfilePage';
 export default function AppLayout() {
-  const { email, user, unreadInterestCount } = useDemo();
+  const { email, user, unreadInterestCount } = useAppState();
   if (!email) return <Navigate to="/login" replace />;
   if (!user) return <ProfilePage />;
   return (

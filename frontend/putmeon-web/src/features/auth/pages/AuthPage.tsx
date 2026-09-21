@@ -1,11 +1,11 @@
 import CodeInput from '../components/CodeInput';
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useDemo } from '../../../state/useDemo';
+import { useAppState } from '../../../state/useAppState';
 import city from '../../../assets/Peopleback.png';
 
 export default function AuthPage() {
-  const { email, requestCode, verifyCode, busy } = useDemo();
+  const { email, requestCode, verifyCode, busy } = useAppState();
   const navigate = useNavigate();
   const [address, setAddress] = useState('');
   const [sent, setSent] = useState(false);

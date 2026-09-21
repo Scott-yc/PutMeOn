@@ -3,14 +3,14 @@ import DetailRow from '../../../shared/components/DetailRow';
 import type { Profile } from '../../../domain/models';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useDemo } from '../../../state/useDemo';
+import { useAppState } from '../../../state/useAppState';
 import ContactDialog from '../../../shared/components/ContactDialog';
 import { Badge } from '../components/PostCard';
 import { daysRemaining } from '../../../domain/postExpiry';
 
 export default function PostDetailPage({ interested = false }: { interested?: boolean }) {
   const { id } = useParams();
-  const { database, user, busy, loadContact, applyToPost, markInterestsViewed } = useDemo();
+  const { database, user, busy, loadContact, applyToPost, markInterestsViewed } = useAppState();
   const [error, setError] = useState('');
   const [contact, setContact] = useState<Profile | null>(null);
   const [receiptError, setReceiptError] = useState(false);

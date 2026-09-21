@@ -1,13 +1,13 @@
 import TradeOptions from '../../../shared/components/TradeOptions';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useDemo } from '../../../state/useDemo';
+import { useAppState } from '../../../state/useAppState';
 import PostCard from '../components/PostCard';
 
 import { daysRemaining } from '../../../domain/postExpiry';
 export default function FeedPage({ mine = false }: { mine?: boolean }) {
   const { database, user, busy, hasMore, postFilters, searchPosts, loadMore, deletePost } =
-    useDemo();
+    useAppState();
   const [error, setError] = useState('');
   const [kind, setKind] = useState(postFilters.kind);
   const [trade, setTrade] = useState(postFilters.trade);

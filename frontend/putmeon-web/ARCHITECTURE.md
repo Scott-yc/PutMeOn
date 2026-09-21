@@ -13,7 +13,7 @@ These are project conventions, not a requirement to use particular directory nam
 - `data` contains the HTTP client and local demo persistence, including migrations and fixtures. `DemoRepository` is the replaceable snapshot interface for the frontend-only demo.
 - `shared` contains reusable UI, form adapters, formatting and base styles. Feature-specific components stay with their feature.
 
-The default `ApiProvider` makes asynchronous requests through `data/api`. The server filters and paginates posts and returns public profile fields. Contact details use a separate authorised endpoint. Never send the entire database to the browser or rely on frontend checks for access control.
+The default `ApiProvider` renders loading/error states and provides application state. `useApiState` coordinates asynchronous state updates, cancellation, pagination and refreshes. HTTP methods, paths and JSON bodies belong in `data/api/applicationApi.ts`. The app composition layer translates routes into a data scope; the state layer does not import the router. Pages use `useAppState`, and both providers implement the contract in `appContext.ts`. The server filters and paginates posts and returns public profile fields. Contact details use a separate authorised endpoint. Never send the entire database to the browser or rely on frontend checks for access control.
 
 The backend Application layer is authoritative for production rules and permissions. Frontend domain rules support validation and the local demo. Update both sides when changing shared behaviour. The older `DemoProvider` only runs in explicitly selected frontend demo mode and is not production authentication.
 
@@ -48,3 +48,11 @@ Playwright covers stale edits, pagination refreshes, contact dialogs, read recei
 Preserve visible behaviour during refactoring. If historical prototypes are retained under `archive/prototype`, they are reference material only and do not participate in the active build. Develop features in `src`, not in the archive.
 
 The root `AGENTS.md` records the same maintenance rules for coding assistants. See the root README and deployment guide for startup and hosting details.
+
+## Backend service boundaries
+
+`FeedService` owns read queries, pagination and feed visibility. `ProfileService` handles profile changes. `ContactService` authorises private contact access. `PostService` handles post changes, applications and read acknowledgements; these stay together because they share ownership, expiry and revision constraints. Response field selection lives in an internal `ResponseMapping` helper, not in the endpoint handlers.
+
+Application services intentionally use the scoped EF Core context. This is a small single-database application, not a claim that persistence is interchangeable. Introduce a narrower persistence interface only when a concrete use case needs it. Do not add pass-through repository layers or split shared concurrency rules merely to make files shorter.
+
+The API returns one session/feed snapshot. `useApiState` keeps those updates atomic, so a session change cannot merge another user's paginated state. Separate contexts can be considered if the API contract changes; splitting them now would add coordination without an independent responsibility.

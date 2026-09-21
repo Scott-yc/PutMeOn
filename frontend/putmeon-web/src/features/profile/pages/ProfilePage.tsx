@@ -2,10 +2,10 @@ import { readProfileForm } from '../../../shared/forms/readForm';
 import TradeOptions from '../../../shared/components/TradeOptions';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDemo } from '../../../state/useDemo';
+import { useAppState } from '../../../state/useAppState';
 import { trades } from '../../../domain/models';
 export default function ProfilePage() {
-  const { user, email, busy, saveProfile, logout } = useDemo();
+  const { user, email, busy, saveProfile, logout } = useAppState();
   const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');

@@ -6,58 +6,6 @@ namespace PutMeOn.Api.Application;
 public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
 {
     private long Now => clock.GetUtcNow().ToUnixTimeMilliseconds();
-    public static object ProfileDto(Account a, bool contact = false, string? company = null) => new { a.Id, email = contact ? a.Email : "", a.Name, phone = contact ? a.Phone : "", a.Trade, a.Location, companyName = company ?? a.CompanyName };
-    public static object PostDto(JobPost p, string viewerId) => new { p.Id, p.OwnerId, isDemo = p.OwnerId == DemoPostIdentity.OwnerId, p.Kind, p.Trade, p.Location, p.CompanyName, p.Rate, p.From, p.To, p.Description, createdAt = DateTimeOffset.FromUnixTimeMilliseconds(p.CreatedAt).ToString("O"), p.Revision, viewedInterestCount = p.OwnerId == viewerId ? p.Applications.Count(x => x.Viewed) : 0, interested = p.Applications.Where(x => p.OwnerId == viewerId || x.ApplicantId == viewerId).Select(x => x.ApplicantId).ToArray() };
-    public async Task<object> StateAsync(Account account, string? mode, string? postId, string? trade, string? location, string? kind, int page, CancellationToken ct)
-    {
-        var now = Now;
-        var query = db.Posts.AsNoTracking().Where(p => p.ExpiresAt > now);
-        if (!string.IsNullOrEmpty(postId))
-            query = query.Where(p => p.Id == postId);
-        else
-        {
-            if (mode == "mine")
-                query = query.Where(p => p.OwnerId == account.Id);
-            if (!string.IsNullOrWhiteSpace(trade))
-                query = query.Where(p => p.Trade == trade);
-            if (!string.IsNullOrWhiteSpace(location))
-            {
-                var search = location.Trim().ToLowerInvariant();
-                query = query.Where(p => p.Location.ToLower().Contains(search));
-            }
-            if (kind is "looking" or "available")
-                query = query.Where(p => p.Kind == kind);
-        }
-        page = Math.Clamp(page, 0, 1000);
-        var posts = await query.OrderBy(p => p.OwnerId == DemoPostIdentity.OwnerId).ThenByDescending(p => p.CreatedAt).ThenBy(p => p.Id).Skip(page * 30).Take(31).Include(p => p.Owner).Include(p => p.Applications).AsSplitQuery().ToListAsync(ct);
-        var hasMore = posts.Count > 30;
-        posts = posts.Take(30).ToList();
-        var people = posts.Select(p => p.Owner).DistinctBy(a => a.Id).ToDictionary(a => a.Id);
-        var applicantIds = posts.Where(p => p.OwnerId == account.Id).SelectMany(p => p.Applications).Select(a => a.ApplicantId).Distinct().ToArray();
-        foreach (var person in await db.Accounts.AsNoTracking().Where(a => applicantIds.Contains(a.Id)).ToListAsync(ct))
-            people[person.Id] = person;
-        people[account.Id] = account;
-        return new
-        {
-            email = account.Email,
-            user = account.Name.Length > 0 ? ProfileDto(account, true) : null,
-            profiles = people.Values.Select(a => ProfileDto(a, a.Id == account.Id)),
-            posts = posts.Select(p => PostDto(p, account.Id)),
-            unreadInterestCount = await db.Applications.CountAsync(x => !x.Viewed && x.Post.OwnerId == account.Id && x.Post.ExpiresAt > now, ct),
-            hasMore,
-            page
-        };
-    }
-    public async Task SaveProfileAsync(Account account, ProfileRequest r, CancellationToken ct)
-    {
-        rules.Profile(r);
-        account.Name = r.Name.Trim();
-        account.Phone = r.Phone.Trim();
-        account.Trade = r.Trade;
-        account.Location = r.Location.Trim();
-        account.CompanyName = r.CompanyName?.Trim() ?? "";
-        await db.SaveChangesAsync(ct);
-    }
     public async Task<string> SavePostAsync(Account a, string? id, PostRequest r, CancellationToken ct)
     {
         Rules.Completed(a);
@@ -145,18 +93,5 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
         if (applicantIds.Length > 2000) throw new ApiError(400, "Too many applicants.");
         await db.Applications.Where(x => x.PostId == id && applicantIds.Contains(x.ApplicantId) && !x.Viewed)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.Viewed, true), ct);
-    }
-    public async Task<object> ContactAsync(Account a, string id, string personId, CancellationToken ct)
-    {
-        Rules.Completed(a);
-        var now = Now;
-        var p = await db.Posts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, ct) ?? throw new ApiError(404, "Post not found or expired.");
-        if (p.OwnerId == DemoPostIdentity.OwnerId) throw new ApiError(403, "Example posts do not have contact details.");
-        var ownerContact = p.Kind == "available" && personId == p.OwnerId;
-        var applicantContact = p.OwnerId == a.Id && await db.Applications.AnyAsync(x => x.PostId == id && x.ApplicantId == personId, ct);
-        if (!ownerContact && !applicantContact)
-            throw new ApiError(403, "You cannot view these contact details.");
-        var person = await db.Accounts.AsNoTracking().SingleAsync(x => x.Id == personId, ct);
-        return ProfileDto(person, true, ownerContact ? p.CompanyName : null);
     }
 }

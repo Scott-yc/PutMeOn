@@ -31,3 +31,25 @@ test('feature pages do not mutate database collections or access browser storage
     );
   }
 });
+
+test('state does not depend on routing or build HTTP requests', () => {
+  for (const path of files(new URL('../src/state', import.meta.url))) {
+    const source = readFileSync(path, 'utf8');
+    assert.doesNotMatch(
+      source,
+      /from ['"]react-router(?:-dom)?['"]|\bfetch\s*\(|\bapiRequest(?:<|\()/,
+      path,
+    );
+  }
+});
+
+test('API transport does not depend on state, routing or UI', () => {
+  for (const path of files(new URL('../src/data/api', import.meta.url))) {
+    const source = readFileSync(path, 'utf8');
+    assert.doesNotMatch(
+      source,
+      /from ['"]react(?:-router-dom)?['"]|(?:\.\.\/)+(?:state|features|app|shared)\//,
+      path,
+    );
+  }
+});

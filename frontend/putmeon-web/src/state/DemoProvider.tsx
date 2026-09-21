@@ -2,12 +2,12 @@ import { contactForPost } from '../domain/contactAccess';
 import { verifyDemoCode } from '../data/local/demoAuth';
 import { persistCommand } from '../data/persistCommand';
 import * as commands from '../domain/commands';
-import type { ActionResult } from './demoContext';
+import type { ActionResult } from './appContext';
 import type { DemoRepository } from '../data/contracts/DemoRepository';
 import { localDemoRepository } from '../data/local/localDemoRepository';
 import type { Database } from '../domain/models';
 import { useEffect, useRef, useState } from 'react';
-import { Context } from './demoContext';
+import { Context } from './appContext';
 import type { ReactNode } from 'react';
 import { expiresAt, removeExpiredPosts } from '../domain/postExpiry';
 

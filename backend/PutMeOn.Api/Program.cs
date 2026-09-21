@@ -28,6 +28,9 @@ builder.Services.AddHttpClient<EmailSender>(c => c.Timeout = TimeSpan.FromSecond
     .RedactLoggedHeaders(_ => true);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PostService>();
+builder.Services.AddScoped<FeedService>();
+builder.Services.AddScoped<ProfileService>();
+builder.Services.AddScoped<ContactService>();
 builder.Services.AddScoped<ExpiryCleanup>();
 builder.Services.AddScoped<DemoPostReplenisher>();
 builder.Services.AddHostedService<ExpiryWorker>();

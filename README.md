@@ -72,7 +72,7 @@ shared/                  Server trade catalogue
 scripts/                 Local startup and check scripts
 ```
 
-Pages call explicit state actions rather than writing to storage. The API makes the final permission checks. Contact details are loaded through a separate authorised endpoint instead of being included in the feed.
+Pages call explicit state actions through `useAppState` rather than writing to storage. Routing is translated into a query scope by the app layer; state coordinates requests, and the API adapter owns HTTP details. The API makes the final permission checks. Contact details are loaded through a separate authorised endpoint instead of being included in the feed. On the backend, feed queries, profile updates and contact access have separate services; post mutations and applications stay together because they share revision and ownership checks.
 
 Edits carry the revision that was loaded when the form opened. If someone changes the post elsewhere, the server rejects the stale save rather than silently overwriting it. Applicant updates use the same revision guard and retry independent concurrent applications.
 
