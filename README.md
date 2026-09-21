@@ -17,7 +17,7 @@ There are two types of post: **Looking for a Subbie** and **Available for Work**
 - Seven-day post expiry. Editing a post does not extend its life.
 - Mobile layouts, with long feed descriptions limited to five lines.
 
-Posts marked **Demo** are generated examples, not real jobs or people. The app maintains 25 of each type, replacing missing or expired examples while it is running. Real posts appear first. Demo posts cannot receive applications or expose contact details. Set `DemoPosts__Enabled=false` to turn them off; the next worker run removes the examples without touching real posts.
+Posts marked **Demo** are generated examples, not real jobs or people. The app maintains 25 of each type, replacing missing or expired examples while it is running. Real posts appear first. Demo posts cannot receive applications or expose contact details. Set `DemoPosts__Enabled=false` and restart the service to turn them off; the next worker run removes the examples without touching real posts.
 
 ## Stack
 

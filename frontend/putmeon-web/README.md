@@ -1,58 +1,63 @@
 # PutMeOn frontend
 
-React + TypeScript + Vite. The default mode uses the ASP.NET Core API. See the root README for full-stack startup and deployment status.
+React, TypeScript and Vite. The default mode connects to the ASP.NET Core API. Start with the [project README](../../README.md) for full-stack setup and the live app, or the [deployment guide](../../DEPLOYMENT.md) for hosting configuration.
 
 ## Development
 
-- `npm ci`: install locked dependencies.
-- `npm run dev`: start the local preview.
-- `npm run format`: format source and configuration.
-- `npm run check`: formatting, lint, tests, strict TypeScript and production build.
+Run these commands from this directory:
 
-Only with VITE_DATA_MODE=demo: use any fictional email with demo code `482913`. Seeded accounts are `builder@example.com` and `electrician@example.com`. No email is sent. Login resets on refresh; records persist in localStorage under `putmeon.demo.v1`.
-
-## Architecture
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for module ownership, dependency rules, validation and extension requirements.
-
-```text
-src/
-  app/                 App composition, routes and layout
-  features/
-    auth/              Login screen, six-digit input and auth styling
-    posts/             Feed, editor, detail, post cards and post styling
-    profile/           Profile and account screen
-  domain/              Models, categories, validation, commands and expiry
-  state/               React state and explicit application actions
-  data/
-    contracts/         Local demo repository contract
-    local/             Persistence, migration, fixtures and simulated auth
-  shared/
-    components/        Shared form options and contact dialog
-    forms/             FormData-to-domain-draft conversion
-    styles/            Base styles and responsive overrides
-  index.css            Stylesheet imports only
-  main.tsx             Browser bootstrap
+```powershell
+npm ci
 ```
 
-Original unused pages are preserved under `archive/prototype/` outside the compiled application. They are historical source, not a second runnable app.
+Then start both the API and Vite from the repository root:
 
-## Product rules
+```powershell
+cd ../..
+./scripts/start-dev.ps1
+```
 
-Posts expire exactly 168 hours after publication; editing retains the original publication time and applications. Expired posts and embedded applications are removed locally on load, while open and when resuming. Closed browsers cannot clean up until reopened. Company names are optional, at most 120 characters, and each post retains its own company name. The main trade catalogue is shared by all dropdowns, with legacy selections normalized at the repository boundary.
+The frontend runs at `http://127.0.0.1:5173`. Vite proxies `/api` requests to the backend at `http://127.0.0.1:5080`. Running `npm run dev` alone starts only Vite; the API must already be running for the default mode to work.
 
-## Validation
+On a fresh local checkout, development login codes are shown on the login page instead of emailed. The deployed app uses real email delivery and server-managed cookie sessions.
 
-Automated tests cover storage recovery, lifetime boundaries, category uniqueness, command validation, ownership, duplicate applications, identity retention and architectural boundaries. Browser smoke checks are separate; unit tests do not prove pixel fidelity or production security.
+## Working in the frontend
 
-## Production work remaining
+| Location             | Responsibility                                                       |
+| -------------------- | -------------------------------------------------------------------- |
+| `src/app`            | Routing, layouts and translating the current route into a data scope |
+| `src/features`       | Authentication, posts and profile screens with their components      |
+| `src/domain`         | Models, validation, trade categories and frontend business rules     |
+| `src/state`          | Application state, async actions, refreshes and pagination           |
+| `src/data/api`       | HTTP client, typed API calls and response contracts                  |
+| `src/data/local`     | Frontend-only demo fixtures and persistence                          |
+| `src/data/contracts` | Local demo repository contract                                       |
+| `src/shared`         | Shared components, form adapters, formatting and styles              |
 
-Real server authentication, API and database; server-generated timestamps; server-side authorization and validation; unique application constraints; indexed expiry cleanup and cascading deletion; rate limiting; privacy/retention decisions; end-to-end and device tests; deployment and monitoring. Google sign-in, company profiles and reporting remain deferred. Browser-side checks are not a security boundary. The local snapshot repository is intentionally synchronous; a real API requires async use cases with loading, failure and concurrency handling.
+Pages use `useAppState`. `ApiProvider` renders loading and error states, while `useApiState` coordinates the snapshot and requests. `applicationApi` owns HTTP paths, methods and payloads. This keeps route handling and transport details out of the state logic.
 
-## Logic audit (2026-09-14)
+See [ARCHITECTURE.md](ARCHITECTURE.md) for dependency rules and extension guidance. The backend remains authoritative for permissions, expiry and validation; browser checks are not a security boundary.
 
-Verified 24 automated tests and browser flow: login as applicant, apply, duplicate button disabled, log out, log in as poster, see updated count, open contact details, reject changing a post with applicants to Available for Work. Checked My Posts at 390px width.
+## Checks
 
-Fixes: strict calendar dates and Brisbane date boundary; preserve application semantics on type changes; report persistence failures; read latest local snapshot before sequential writes and synchronize storage events; reset route-specific form/dialog state; derive contact details from current authorized records; clear resend errors; emphasize owner application counts and remove self-application actions.
+From this directory:
 
-Limits: localStorage is not transactional across simultaneous writes from separate tabs. Damaged storage still falls back to demo fixtures. Authentication is simulated; sessions reset on refresh. Server authorization, cross-device consistency, concurrent-write guarantees, automated browser coverage and backend expiry deletion remain outstanding. These checks do not prove every possible path correct.
+```powershell
+npm run check
+npx playwright install chromium
+npm run test:browser
+```
+
+`npm run check` runs formatting, lint, unit and architecture tests, TypeScript and a production build. `npm run test:browser` starts its own local Vite server and checks browser workflows against mocked API responses. Install Chromium once before running those tests.
+
+The repository-level `scripts/check.ps1` also runs the backend checks. Real email delivery and mobile keyboard autofill need separate verification on the deployed app.
+
+Use `npm run format` to apply formatting. `npm run build` writes production assets to `dist`; the root Dockerfile packages them with the API.
+
+## Frontend-only demo mode
+
+For isolated UI work without a backend, run `./scripts/start-dev.ps1 -Demo` from the repository root. This selects `VITE_DATA_MODE=demo`. Use a fictional email and code `482913`. It sends no email, stores records in localStorage under `putmeon.demo.v1`, and resets login state on refresh. It has no server-side security and must not be used as the public deployment.
+
+This mode is separate from the posts labelled **Demo** in the normal API-backed app. Those examples are maintained by the backend, are read-only for visitors, and do not replace real authentication.
+
+Historical prototypes in `archive/prototype` are reference material, not an alternative runnable app. The active routes are registered in `src/app/AppRoutes.tsx`.
