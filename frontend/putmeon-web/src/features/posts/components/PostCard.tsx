@@ -24,6 +24,7 @@ export default function PostCard({
   return (
     <article className="card post-card">
       <Badge kind={post.kind} />
+      {post.isDemo && <span className="badge demo">Demo</span>}
       <div className="post-summary">
         <div>
           <h2>{post.trade}</h2>
@@ -48,7 +49,7 @@ export default function PostCard({
           <Link className="button secondary" to={`/posts/${post.id}`}>
             View
           </Link>
-          {!owner && (
+          {!owner && !post.isDemo && (
             <Link className="button" to={`/posts/${post.id}`}>
               {post.kind === 'looking' ? 'Put Me On' : 'Contact'}
             </Link>

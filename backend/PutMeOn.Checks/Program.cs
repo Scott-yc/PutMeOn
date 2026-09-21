@@ -8,6 +8,7 @@ await EmailChecks.RunAsync();
 await AuthChecks.RunAsync();
 await PostgresChecks.RunAsync();
 await ConcurrencyChecks.RunAsync();
+await DemoPostChecks.RunAsync();
 
 await using var connection = new SqliteConnection("Data Source=:memory:");
 await connection.OpenAsync();

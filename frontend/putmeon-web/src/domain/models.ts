@@ -10,6 +10,7 @@ export interface Profile {
   companyName?: string;
 }
 export interface Post {
+  isDemo?: boolean;
   id: string;
   ownerId: string;
   kind: PostKind;

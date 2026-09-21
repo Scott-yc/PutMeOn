@@ -7,6 +7,7 @@ namespace PutMeOn.Api.Application;
 public sealed class Rules
 {
     private readonly HashSet<string> trades = JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "trades.json")))!.ToHashSet();
+    public IReadOnlyCollection<string> Trades => trades;
     public void Profile(ProfileRequest r)
     {
         Common(r.Trade, r.Location, r.CompanyName);

@@ -276,3 +276,9 @@
   border-radius: 50%;
   background: #e32636;
 }
+
+.badge.demo {
+  margin-left: 0.5rem;
+  background: #edf2f7;
+  color: #475569;
+}

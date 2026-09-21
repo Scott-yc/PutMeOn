@@ -28,6 +28,8 @@ static class AuthChecks
             try { await action(); throw new Exception("Expected rejection."); }
             catch (ApiError e) when (e.Status == status) { }
         }
+        await Rejected(async () => { await auth.SendCodeAsync(PutMeOn.Api.Domain.DemoPostIdentity.Email, default); }, 400);
+        await Rejected(() => auth.VerifyAsync(PutMeOn.Api.Domain.DemoPostIdentity.Email, "000000", new DefaultHttpContext(), default), 400);
         var code = await Send();
         clock.Value = clock.Value.AddSeconds(59);
         await Rejected(async () => { await Send(); }, 429);

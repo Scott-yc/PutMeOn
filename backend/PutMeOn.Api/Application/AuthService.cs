@@ -14,6 +14,7 @@ public sealed class AuthService(AppDb db, EmailSender sender, IConfiguration con
     public async Task<object> SendCodeAsync(string email, CancellationToken ct)
     {
         email = email.Trim().ToLowerInvariant();
+        if (email == DemoPostIdentity.Email) throw new ApiError(400, "This address cannot be used to sign in.");
         var now = Now;
         var row = await db.LoginCodes.FindAsync([email], ct);
         if (row != null && now - row.LastSentAt < 60000)
@@ -52,6 +53,7 @@ public sealed class AuthService(AppDb db, EmailSender sender, IConfiguration con
     public async Task VerifyAsync(string email, string code, HttpContext http, CancellationToken ct)
     {
         email = email.Trim().ToLowerInvariant();
+        if (email == DemoPostIdentity.Email) throw new ApiError(400, "This address cannot be used to sign in.");
         var row = await db.LoginCodes.FindAsync([email], ct);
         var now = Now;
         if (row == null || row.ExpiresAt <= now || row.Attempts >= 5)

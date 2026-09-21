@@ -29,6 +29,7 @@ builder.Services.AddHttpClient<EmailSender>(c => c.Timeout = TimeSpan.FromSecond
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<ExpiryCleanup>();
+builder.Services.AddScoped<DemoPostReplenisher>();
 builder.Services.AddHostedService<ExpiryWorker>();
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {

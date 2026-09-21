@@ -133,3 +133,19 @@ test('mobile badge caps at 99+ and cards clamp descriptions', async ({ page }) =
       .evaluate((el) => getComputedStyle(el).webkitLineClamp),
   ).toBe('5');
 });
+
+for (const kind of ['looking', 'available']) {
+  test(`demo ${kind} posts show a label and no apply/contact actions`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await setup(page, () => ({
+      posts: [{ ...post(), ownerId: 'system-demo-posts', kind, isDemo: true, interested: [] }],
+    }));
+    await page.goto('/home');
+    const card = page.locator('.post-card');
+    await expect(card.getByText('Demo', { exact: true })).toBeVisible();
+    await expect(card.getByRole('link', { name: /^(Put Me On|Contact)$/ })).toHaveCount(0);
+    await card.getByRole('link', { name: 'View', exact: true }).click();
+    await expect(page.getByText(/This is not a real vacancy or worker profile/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^(Put Me On|Contact)$/ })).toHaveCount(0);
+  });
+}

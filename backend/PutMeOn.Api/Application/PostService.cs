@@ -7,7 +7,7 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
 {
     private long Now => clock.GetUtcNow().ToUnixTimeMilliseconds();
     public static object ProfileDto(Account a, bool contact = false, string? company = null) => new { a.Id, email = contact ? a.Email : "", a.Name, phone = contact ? a.Phone : "", a.Trade, a.Location, companyName = company ?? a.CompanyName };
-    public static object PostDto(JobPost p, string viewerId) => new { p.Id, p.OwnerId, p.Kind, p.Trade, p.Location, p.CompanyName, p.Rate, p.From, p.To, p.Description, createdAt = DateTimeOffset.FromUnixTimeMilliseconds(p.CreatedAt).ToString("O"), p.Revision, viewedInterestCount = p.OwnerId == viewerId ? p.Applications.Count(x => x.Viewed) : 0, interested = p.Applications.Where(x => p.OwnerId == viewerId || x.ApplicantId == viewerId).Select(x => x.ApplicantId).ToArray() };
+    public static object PostDto(JobPost p, string viewerId) => new { p.Id, p.OwnerId, isDemo = p.OwnerId == DemoPostIdentity.OwnerId, p.Kind, p.Trade, p.Location, p.CompanyName, p.Rate, p.From, p.To, p.Description, createdAt = DateTimeOffset.FromUnixTimeMilliseconds(p.CreatedAt).ToString("O"), p.Revision, viewedInterestCount = p.OwnerId == viewerId ? p.Applications.Count(x => x.Viewed) : 0, interested = p.Applications.Where(x => p.OwnerId == viewerId || x.ApplicantId == viewerId).Select(x => x.ApplicantId).ToArray() };
     public async Task<object> StateAsync(Account account, string? mode, string? postId, string? trade, string? location, string? kind, int page, CancellationToken ct)
     {
         var now = Now;
@@ -29,7 +29,7 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
                 query = query.Where(p => p.Kind == kind);
         }
         page = Math.Clamp(page, 0, 1000);
-        var posts = await query.OrderByDescending(p => p.CreatedAt).ThenBy(p => p.Id).Skip(page * 30).Take(31).Include(p => p.Owner).Include(p => p.Applications).AsSplitQuery().ToListAsync(ct);
+        var posts = await query.OrderBy(p => p.OwnerId == DemoPostIdentity.OwnerId).ThenByDescending(p => p.CreatedAt).ThenBy(p => p.Id).Skip(page * 30).Take(31).Include(p => p.Owner).Include(p => p.Applications).AsSplitQuery().ToListAsync(ct);
         var hasMore = posts.Count > 30;
         posts = posts.Take(30).ToList();
         var people = posts.Select(p => p.Owner).DistinctBy(a => a.Id).ToDictionary(a => a.Id);
@@ -130,6 +130,7 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
         Rules.Completed(a);
         var now = Now;
         var p = await db.Posts.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, ct) ?? throw new ApiError(404, "Post not found or expired.");
+        if (p.OwnerId == DemoPostIdentity.OwnerId) throw new ApiError(403, "Example posts cannot receive applications.");
         if (p.Kind != "looking" || p.OwnerId == a.Id)
             throw new ApiError(400, "You cannot apply to this post.");
         if (await db.Applications.AnyAsync(x => x.PostId == id && x.ApplicantId == a.Id, ct))
@@ -150,6 +151,7 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
         Rules.Completed(a);
         var now = Now;
         var p = await db.Posts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, ct) ?? throw new ApiError(404, "Post not found or expired.");
+        if (p.OwnerId == DemoPostIdentity.OwnerId) throw new ApiError(403, "Example posts do not have contact details.");
         var ownerContact = p.Kind == "available" && personId == p.OwnerId;
         var applicantContact = p.OwnerId == a.Id && await db.Applications.AnyAsync(x => x.PostId == id && x.ApplicantId == personId, ct);
         if (!ownerContact && !applicantContact)

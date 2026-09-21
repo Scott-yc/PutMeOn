@@ -49,3 +49,9 @@ Applications.Viewed 保存已读状态；升级只增加非空布尔字段（默
 - /api/health 是进程存活，/api/ready 检查数据库表可查询。不要高频外部轮询 /api/ready，以免阻止免费数据库休眠。
 - 线上代理配置尚待实际核验：分别用两种网络登录并检查限流日志，按平台可信代理地址配置 Proxy__KnownProxies__0，不得信任任意 X-Forwarded-For。
 - 本次修复无数据库结构变更。未来结构升级先备份，审查迁移脚本并在测试数据库执行；先添加兼容字段再迁移数据，最后独立发布删除旧字段。恢复时使用已验证的备份，不直接回滚破坏性迁移。
+
+## Automatically replenished example posts
+
+`DemoPosts__Enabled=true` (the application default) maintains 25 examples for each post type. Set it to `false` and restart to remove only system demo posts. The worker runs on startup and every five minutes while the service is awake; free hosting cannot run jobs while asleep. No external scheduler or paid service is required.
+
+Examples have a reserved, non-login system account, explicit demo labels, illustrative rates and dates, and no application/contact actions (also blocked by the API). Real posts sort before examples. Each category uses unique trade/suburb combinations from the existing trade catalogue, with randomized schedules and descriptions. Live examples remain unchanged; missing or expired slots are replenished for seven days. Fixed slot IDs and a serializable transaction prevent duplicate batches during overlapping starts; a failed batch is retried at the next worker interval. Real users and their expiry rules are untouched. No database migration is required.

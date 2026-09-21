@@ -123,6 +123,12 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
         ) : (
           <>
             <Badge kind={post.kind} />
+            {post.isDemo && (
+              <p className="info">
+                Demo · Example post. This is not a real vacancy or worker profile. Applications and
+                contact are unavailable.
+              </p>
+            )}
             <h1>{post.trade}</h1>
             <DetailRow icon="location">{post.location}</DetailRow>
             <DetailRow icon="money">${post.rate}/hr</DetailRow>
@@ -136,7 +142,7 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
             <h2>{owner?.name ?? 'Unknown user'}</h2>
             {post.companyName && <p className="company-name">{post.companyName}</p>}
             <p>{owner?.trade}</p>
-            {isOwner ? (
+            {post.isDemo ? null : isOwner ? (
               <div className="actions">
                 <Link className="button secondary" to={`/posts/${post.id}/edit`}>
                   Edit Post
