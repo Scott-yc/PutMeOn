@@ -1,53 +1,50 @@
-# 项目设计约定
+# Architecture
 
-## 本次审查结论
+The frontend uses feature folders with separate domain, state and data layers. This keeps page code focused on rendering and interaction, rather than storage or business rules.
 
-旧实现的问题是职责混杂：页面直接改数据库数组、表单内拼装和校验业务对象、路由与导航混写、全局样式承载所有页面，以及未使用的原型与当前代码并存。严格类型检查不能替代架构设计。本次重构建立的是可维护的前端演示基线，不代表后端和上线工程已完成。
+These are project conventions, not a requirement to use particular directory names. Change the structure when there is a concrete maintenance reason, and update the documentation and tests with it. Do not introduce empty services or switch between top-level pages and feature folders just for naming consistency.
 
-## 固定架构决策
+## Responsibilities
 
-本项目采用按功能组织的分层前端架构。没有强制要求顶层必须叫 pages 或 services 的通用目录标准；规范由职责边界、依赖方向、一致性和可验证行为落实。本项目固定使用 features/*/pages，不再维护顶层 pages。原 services 的职责明确归入 domain（规则）、state（操作协调）和 data（数据访问），不新增空壳 services 层。
+- `app` composes routes, layouts and providers. It does not contain business rules.
+- `features` contains route pages and feature-specific components. Changes go through explicit state actions, not direct storage writes or collection mutations.
+- `state` coordinates commands, API requests and state updates, with explicit success and failure results.
+- `domain` contains plain TypeScript models, validation and frontend business rules. It must not depend on React, browser APIs, persistence or UI modules.
+- `data` contains the HTTP client and local demo persistence, including migrations and fixtures. `DemoRepository` is the replaceable snapshot interface for the frontend-only demo.
+- `shared` contains reusable UI, form adapters, formatting and base styles. Feature-specific components stay with their feature.
 
-后续只有出现具体的扩展或维护需求才调整结构，并同时更新本文件与测试。项目根目录 AGENTS.md 约束后续开发遵守这些规则。
+The default `ApiProvider` makes asynchronous requests through `data/api`. The server filters and paginates posts and returns public profile fields. Contact details use a separate authorised endpoint. Never send the entire database to the browser or rely on frontend checks for access control.
 
-## 依赖方向
+The backend Application layer is authoritative for production rules and permissions. Frontend domain rules support validation and the local demo. Update both sides when changing shared behaviour. The older `DemoProvider` only runs in explicitly selected frontend demo mode and is not production authentication.
 
-- app 负责组装路由、布局和 Provider，不写业务规则。
-- features 负责页面交互和渲染，通过 state 暴露的明确操作发起修改，不直接操作存储或修改数据库集合。
-- state 协调业务命令、React 状态和仓储；返回明确的成功或失败结果。
-- domain 为纯 TypeScript，不依赖 React、DOM、存储或页面。发布、编辑、报名、删除与资料校验集中在这里。
-- data 负责本地持久化、旧数据迁移、模拟数据及模拟认证。DemoRepository 是本地演示的可替换快照接口。
-- shared 放跨功能复用内容，不放某个业务页面的专用组件。
+## Pages and styles
 
-读取目前仍使用 demo context 中的类型化快照。接真实 API 时，应改为查询接口和异步操作；不能把整个数据库传到浏览器。权限判定必须在服务端重新执行。
+Pages may handle display conditions and form submission, but must not implement persistence. FormData conversion belongs in `shared/forms`; validation belongs in the domain layer. Extract components for a real shared responsibility, not for every individual label.
 
-## 页面与样式
+Styles are split between authentication, posts, shared dialogs and base styles. `index.css` collects the imports, with base styles loaded last to preserve responsive overrides. These are ordinary CSS files, not isolated CSS Modules, so avoid class-name collisions. Module styles can be introduced as individual features need them.
 
-页面可以包含展示条件和提交事件，但不实现数据库写入规则。FormData 转换放在 shared/forms；业务校验放在 domain。只为真实的复用或独立职责抽取组件，避免把每一个标签拆成文件。
+## State consistency
 
-样式按 auth、posts、共享弹窗和全局基础样式分开。index.css 只汇总导入，基础文件最后加载以保留响应式覆盖。当前仍使用普通 CSS，类名需避免跨功能冲突；不是完全隔离的 CSS Modules。后续复杂页面可渐进使用模块样式。
+- An edit form retains the revision it loaded initially. Background refreshes must not replace that revision.
+- Refreshing a paginated feed reloads the range already loaded by the user.
+- Private contact details stay in the detail dialog state, not in the public profile snapshot.
+- Failed read acknowledgements must be retryable without clearing unrelated or newly arrived applications.
 
-## 修改指南
+## Common changes
 
-- 加工种：修改 domain/trades.ts，补充旧值映射和去重测试；不要在页面另建列表。
-- 改帖子有效期：修改 domain/postExpiry.ts 并运行边界测试。
-- 改发布规则：修改 domain/commands.ts；表单属性是体验辅助，不是唯一校验。
-- 改资料或帖子字段：更新模型、表单转换、界面、持久化校验和迁移。
-- 接后端：新增 API 数据访问与异步操作，处理加载、错误、重试和并发；移除模拟认证。不要将同步快照接口冒充生产 API。
-- 加页面：放入对应 feature，并只在 app/AppRoutes.tsx 注册。
+- Trades: update `domain/trades.ts` and the server catalogue in `shared/trades.json`, including legacy mappings and uniqueness checks. Do not add page-specific catalogues.
+- Expiry: update `domain/postExpiry.ts` and the server rules together, then check the time boundaries.
+- Posting rules: update `domain/commands.ts` and the backend rules. HTML form constraints are only an input aid.
+- Profile or post fields: update models, form conversion, UI, persistence validation and migrations where needed.
+- API behaviour: handle loading, errors, retries and concurrency through explicit asynchronous actions. Do not treat a synchronous demo repository as a production API.
+- Routes: put screens in the relevant feature and register them in `app/AppRoutes.tsx`.
 
-## 质量检查
+## Checks
 
-提交前运行 npm run check。Prettier 保持格式一致；oxlint 和严格 TypeScript 检查基础错误；测试验证业务边界及依赖约束。新增或修复业务规则要增加行为测试，不复制实现细节来凑测试数量。
+Run `npm run check` before submitting implementation changes. Prettier handles formatting; oxlint and TypeScript catch basic errors. Behaviour tests cover business boundaries, and architecture tests check dependency restrictions. Add regression tests for changed rules rather than tests that simply repeat the implementation.
 
-已提供 GitHub Actions 和 Playwright 浏览器回归，覆盖编辑版本、分页刷新、联系方式、已读重试和手机角标。浏览器测试模拟 API；真实数据库并发由后端独立 PostgreSQL 测试覆盖。真实邮箱和手机系统自动填充仍需上线验收。
+Playwright covers stale edits, pagination refreshes, contact dialogs, read receipt retries, mobile badges and Demo post actions. These browser tests mock the API. Separate backend checks exercise SQLite and, when configured, PostgreSQL. Real email delivery and phone keyboard autofill still need testing on the deployed app.
 
-## 历史代码
+Preserve visible behaviour during refactoring. If historical prototypes are retained under `archive/prototype`, they are reference material only and do not participate in the active build. Develop features in `src`, not in the archive.
 
-archive/prototype 仅用于保留原型参考，不参与构建、lint 或运行。未来不要在此修复功能。活动代码只有 src 下的一套。
-
-## .NET API 接入（2026-09-14）
-
-默认使用 ApiProvider，通过 data/api 发出异步请求。服务端按页面查询并分页，返回公开资料，不传整个数据库；联系方式单独授权获取。旧 DemoProvider 仅在显式 demo 模式启用。后端 Application 是生产业务和权限的权威实现，前端 domain 保留表单及演示规则。变更业务约束时同步两端并运行数据库边界检查。加载失败、重试、Cookie 会话和编辑版本冲突已处理。完整目录和部署边界以项目根 README、DEPLOYMENT 为准。
-
-编辑表单固定持有初始 revision；自动刷新不得替换它。分页刷新重新读取已加载范围。联系方式保留在详情弹窗状态中，不与公开资料快照合并。新交互必须增加可重现用户行为的回归测试。
+The root `AGENTS.md` records the same maintenance rules for coding assistants. See the root README and deployment guide for startup and hosting details.
