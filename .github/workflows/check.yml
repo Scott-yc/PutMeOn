@@ -1,0 +1,45 @@
+name: Quality checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: putmeon_checks
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d putmeon_checks"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/putmeon-web/package-lock.json
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: npm ci
+        working-directory: frontend/putmeon-web
+      - run: npm run check
+        working-directory: frontend/putmeon-web
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend/putmeon-web
+      - run: npm run test:browser
+        working-directory: frontend/putmeon-web
+      - run: dotnet restore backend/PutMeOn.Api --locked-mode
+      - run: dotnet build backend/PutMeOn.Api --no-restore
+      - run: dotnet run --project backend/PutMeOn.Checks
+        env:
+          PUTMEON_TEST_POSTGRES: Host=localhost;Database=putmeon_checks;Username=postgres;Password=local-ci-only

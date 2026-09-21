@@ -6,6 +6,7 @@ services:
     plan: free
     region: singapore
     dockerfilePath: ./Dockerfile
+    autoDeployTrigger: checksPass
     healthCheckPath: /api/health
     envVars:
       - key: ASPNETCORE_ENVIRONMENT

@@ -10,6 +10,7 @@ export default function PostFormPage() {
   const navigate = useNavigate();
   const post = database.posts.find((p) => p.id === id);
   const [error, setError] = useState('');
+  const [editingRevision] = useState(post?.revision);
   if (!user || (id && (!post || post.ownerId !== user.id)))
     return (
       <main>
@@ -25,7 +26,11 @@ export default function PostFormPage() {
           onSubmit={async (event) => {
             event.preventDefault();
             if (busy) return;
-            const result = await savePost(readPostForm(new FormData(event.currentTarget)), id);
+            const result = await savePost(
+              readPostForm(new FormData(event.currentTarget)),
+              id,
+              editingRevision,
+            );
             if (!result.ok) {
               setError(result.error);
               return;

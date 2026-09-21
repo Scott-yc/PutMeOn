@@ -1,6 +1,6 @@
 import { formatDateRange } from '../../../shared/formatting/dates';
 import DetailRow from '../../../shared/components/DetailRow';
-import { contactForPost } from '../../../domain/contactAccess';
+import type { Profile } from '../../../domain/models';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDemo } from '../../../state/useDemo';
@@ -10,9 +10,11 @@ import { daysRemaining } from '../../../domain/postExpiry';
 
 export default function PostDetailPage({ interested = false }: { interested?: boolean }) {
   const { id } = useParams();
-  const { database, now, user, busy, loadContact, applyToPost, markInterestsViewed } = useDemo();
+  const { database, user, busy, loadContact, applyToPost, markInterestsViewed } = useDemo();
   const [error, setError] = useState('');
-  const [contactId, setContactId] = useState<string | null>(null);
+  const [contact, setContact] = useState<Profile | null>(null);
+  const [receiptError, setReceiptError] = useState(false);
+  const [receiptAttempt, setReceiptAttempt] = useState(0);
   const markedViewed = useRef<string | null>(null);
   async function openContact(personId: string) {
     if (!id) return;
@@ -21,7 +23,7 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
       setError(result.error);
       return;
     }
-    setContactId(personId);
+    setContact(result.contact ?? null);
   }
   const post = database.posts.find((p) => p.id === id);
   useEffect(() => {
@@ -36,11 +38,16 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
       markedViewed.current === receipt
     )
       return;
+    if (busy || receiptError) return;
     markedViewed.current = receipt;
     void Promise.resolve(markInterestsViewed(id)).then((result) => {
-      if (!result.ok) setError(result.error);
+      if (!result.ok) {
+        markedViewed.current = null;
+        setError(result.error);
+        setReceiptError(true);
+      }
     });
-  }, [id, interested, user, post, markInterestsViewed]);
+  }, [id, interested, user, post, busy, receiptError, receiptAttempt, markInterestsViewed]);
   if (!post || !user)
     return (
       <main>
@@ -48,9 +55,6 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
         <Link to="/home">Back to feed</Link>
       </main>
     );
-  const contact = contactId
-    ? contactForPost(database, post.id, user.id, contactId, now)
-    : undefined;
   const owner = database.profiles.find((p) => p.id === post.ownerId);
   const isOwner = user.id === post.ownerId;
   const applied = post.interested.includes(user.id);
@@ -68,6 +72,19 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
         <p role="alert" className="error">
           {error}
         </p>
+      )}
+      {receiptError && (
+        <button
+          className="secondary"
+          disabled={busy}
+          onClick={() => {
+            setError('');
+            setReceiptError(false);
+            setReceiptAttempt((n) => n + 1);
+          }}
+        >
+          Retry notification update
+        </button>
       )}
       <section className="card">
         <Link className="back" to="/home">
@@ -158,7 +175,7 @@ export default function PostDetailPage({ interested = false }: { interested?: bo
           </>
         )}
       </section>
-      {contact && <ContactDialog profile={contact} onClose={() => setContactId(null)} />}
+      {contact && !expired && <ContactDialog profile={contact} onClose={() => setContact(null)} />}
     </main>
   );
 }

@@ -17,3 +17,10 @@
 **/*.key
 **/*.pfx
 **/*.p12
+
+**/test-results/
+**/playwright-report/
+**/*.sqlite
+**/*.sqlite3
+**/*.dump
+**/*.bak

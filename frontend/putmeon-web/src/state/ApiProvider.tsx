@@ -41,6 +41,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const activeKey = useRef(key);
   const requestVersion = useRef(0);
   const currentEmail = useRef('');
+  const loadedPages = useRef({ key, page: 0 });
   useEffect(() => {
     activeKey.current = key;
   }, [key]);
@@ -48,11 +49,24 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(
     async (signal?: AbortSignal) => {
       const version = ++requestVersion.current;
-      const result = await apiRequest<ApiSnapshot>(`/state?${query}`, { signal });
+      const lastPage = loadedPages.current.key === key ? loadedPages.current.page : 0;
+      let result = await apiRequest<ApiSnapshot>(`/state?${query}`, { signal });
+      for (let page = 1; page <= lastPage && result.hasMore; page++) {
+        const next = await apiRequest<ApiSnapshot>(`/state?${query}&page=${page}`, { signal });
+        if (next.email !== result.email) return;
+        result = {
+          ...next,
+          posts: [...new Map([...result.posts, ...next.posts].map((p) => [p.id, p])).values()],
+          profiles: [
+            ...new Map([...result.profiles, ...next.profiles].map((p) => [p.id, p])).values(),
+          ],
+        };
+      }
       if (signal?.aborted || activeKey.current !== key || version !== requestVersion.current)
         return;
       if (currentEmail.current !== result.email) setFilters(defaultFilters);
       currentEmail.current = result.email;
+      loadedPages.current = { key, page: result.page };
       setSnapshot(result);
       setLoadedKey(key);
       setError('');
@@ -100,10 +114,11 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   }, [snapshot.posts, now]);
 
   async function run(
-    action: () => Promise<{ id?: string; developmentCode?: string } | void>,
+    action: () => Promise<{ id?: string; developmentCode?: string; contact?: Profile } | void>,
     reload = true,
   ): Promise<ActionResult> {
     if (operation.current) return { ok: false, error: 'Please wait for the current request.' };
+    ++requestVersion.current; // Discard refreshes started before this mutation.
     operation.current = true;
     setBusy(true);
     try {
@@ -150,13 +165,13 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     },
     saveProfile: (draft: ProfileDraft) =>
       run(() => apiRequest('/profile', { method: 'PUT', body: JSON.stringify(draft) })),
-    savePost: (draft: PostDraft, id?: string) =>
+    savePost: (draft: PostDraft, id?: string, revision?: number) =>
       run(() =>
         apiRequest(id ? `/posts/${id}` : '/posts', {
           method: id ? 'PUT' : 'POST',
           body: JSON.stringify({
             ...draft,
-            revision: id ? snapshot.posts.find((p) => p.id === id)?.revision : undefined,
+            revision,
           }),
         }),
       ),
@@ -174,16 +189,14 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     loadContact: (id: string, personId: string) =>
       run(async () => {
         const profile = await apiRequest<Profile>(`/posts/${id}/contacts/${personId}`);
-        setSnapshot((current) => ({
-          ...current,
-          profiles: [...current.profiles.filter((p) => p.id !== personId), profile],
-        }));
+        return { contact: profile };
       }, false),
     searchPosts: setFilters,
     loadMore: async () => {
       const result = await run(async () => {
         const next = await apiRequest<ApiSnapshot>(`/state?${query}&page=${snapshot.page + 1}`);
-        if (activeKey.current !== key) return;
+        if (activeKey.current !== key || next.email !== currentEmail.current) return;
+        loadedPages.current = { key, page: next.page };
         setSnapshot((current) => ({
           ...next,
           posts: [...new Map([...current.posts, ...next.posts].map((p) => [p.id, p])).values()],

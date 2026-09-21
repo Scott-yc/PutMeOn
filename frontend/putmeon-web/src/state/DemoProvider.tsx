@@ -1,3 +1,4 @@
+import { contactForPost } from '../domain/contactAccess';
 import { verifyDemoCode } from '../data/local/demoAuth';
 import { persistCommand } from '../data/persistCommand';
 import * as commands from '../domain/commands';
@@ -131,7 +132,10 @@ export function DemoProvider({
           setEmail(address);
           return { ok: true };
         },
-        loadContact: () => ({ ok: true }),
+        loadContact: (postId, personId) => {
+          const contact = contactForPost(database, postId, user?.id ?? '', personId, now);
+          return contact ? { ok: true, contact } : { ok: false, error: 'Contact unavailable.' };
+        },
         searchPosts: () => {},
         loadMore: () => {},
         logout: () => setEmail(''),

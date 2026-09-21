@@ -1,6 +1,6 @@
 # 免费测试版部署
 
-当前已跑通本机前后端，尚未创建云账号、连接 Neon 或发送真实邮件。Docker 配置和 PostgreSQL 迁移已生成；本机 Docker 引擎未运行，容器构建及真实 PostgreSQL 联调尚未验证。
+项目已经部署到 Render，使用 Neon 和 Brevo。本地测试与线上验证分开记录；不能用本地构建成功代替生产验收。
 
 ## 服务选择与费用边界
 
@@ -35,8 +35,17 @@
 4. 验证 `/api/health`、真实邮件登录、跨账号发帖报名、联系方式权限、刷新登录状态、过期清理、分页、冷启动和可信代理限流。健康接口仅证明进程存活，不能替代数据库检查。
 5. 配置数据库备份与恢复办法、服务异常及邮件配额监控，再邀请少量用户。逐步扩大到目标人数。
 
-限流目前为单实例内存 IP 限流，验证码邮箱限流和会话在数据库中。需要多实例扩容时再引入共享限流。当前没有 CI 云平台配置；仓库接好后应执行 `scripts/check.ps1` 和数据库/HTTP 集成检查。
+限流目前为单实例内存 IP 限流，验证码邮箱限流和会话在数据库中。需要多实例扩容时再引入共享限流。仓库提供 `.github/workflows/check.yml`：前端检查、浏览器回归和隔离 PostgreSQL 集成测试。首次推送后须确认 Actions 实际通过。
 
 ## 申请未读提醒
 
 Applications.Viewed 保存已读状态；升级只增加非空布尔字段（默认 false），已有申请首次显示为未读。仅帖子所有者可确认其已展示的 applicant IDs；并发新申请不会被一起清除。导航计数独立于筛选和分页，仅计有效帖子。页面切换、恢复前台和前台每 60 秒刷新；不是实时推送。
+
+## 发布质量门禁（2026-09-22）
+
+- 本地执行 scripts/check.ps1；前端另执行 npm run test:browser（首次需 npx playwright install chromium）。
+- CI 使用独立本机 PostgreSQL putmeon_checks 数据库，禁止使用 Neon 生产连接。测试覆盖迁移重跑、并发申请、重复申请、旧版本编辑拒绝及已读记录。
+- Render Blueprint 已声明 autoDeployTrigger: checksPass。当前服务如果是手动创建的，修改 YAML 不会自动改变它：须在 Render 将 Auto-Deploy 改为 After CI Checks Pass；GitHub main 应要求 Quality checks / verify 通过才能合并。
+- /api/health 是进程存活，/api/ready 检查数据库表可查询。不要高频外部轮询 /api/ready，以免阻止免费数据库休眠。
+- 线上代理配置尚待实际核验：分别用两种网络登录并检查限流日志，按平台可信代理地址配置 Proxy__KnownProxies__0，不得信任任意 X-Forwarded-For。
+- 本次修复无数据库结构变更。未来结构升级先备份，审查迁移脚本并在测试数据库执行；先添加兼容字段再迁移数据，最后独立发布删除旧字段。恢复时使用已验证的备份，不直接回滚破坏性迁移。

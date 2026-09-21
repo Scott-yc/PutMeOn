@@ -12,7 +12,7 @@ public sealed class ExpiryWorker(IServiceScopeFactory scopes, ILogger<ExpiryWork
                 await scope.ServiceProvider.GetRequiredService<ExpiryCleanup>().RunAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
-            catch (Exception ex) { logger.LogError(ex, "Scheduled cleanup failed; retrying next interval."); }
+            catch (Exception ex) { logger.LogError("Scheduled cleanup failed ({ErrorType}); retrying next interval.", ex.GetType().Name); }
             try
             {
                 await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);

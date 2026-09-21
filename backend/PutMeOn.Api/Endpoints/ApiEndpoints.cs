@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using PutMeOn.Api.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 using PutMeOn.Api.Application;
 using PutMeOn.Api.Domain;
@@ -15,6 +17,11 @@ public static class ApiEndpoints
     private static async Task<Account> User(AuthService auth, HttpContext h, CancellationToken ct) => await auth.CurrentAsync(h, ct) ?? throw new ApiError(401, "Please sign in.");
     public static void MapApi(this WebApplication app)
     {
+        app.MapGet("/api/ready", async (AppDb db, CancellationToken ct) =>
+        {
+            try { await db.Accounts.AsNoTracking().Select(a => a.Id).Take(1).ToListAsync(ct); return Results.Ok(new { status = "ready" }); }
+            catch (Exception ex) when (ex is not OperationCanceledException) { return Results.StatusCode(503); }
+        });
         app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
         app.MapPost("/api/auth/code", async (SendCodeRequest r, AuthService auth, CancellationToken ct) => Results.Ok(await auth.SendCodeAsync(Validate(r).Email, ct))).RequireRateLimiting("auth");
         app.MapPost("/api/auth/verify", async (VerifyCodeRequest r, AuthService auth, HttpContext h, CancellationToken ct) => { Validate(r); await auth.VerifyAsync(r.Email, r.Code, h, ct); return Results.NoContent(); }).RequireRateLimiting("verify");

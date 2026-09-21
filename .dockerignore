@@ -14,3 +14,10 @@
 **/*.pfx
 **/*.p12
 .git
+**/*.log
+**/test-results
+**/playwright-report
+**/*.sqlite
+**/*.sqlite3
+**/*.dump
+**/*.bak

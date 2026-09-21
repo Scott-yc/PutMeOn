@@ -24,7 +24,8 @@ builder.Services.AddDbContext<AppDb>(o =>
 });
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<Rules>();
-builder.Services.AddHttpClient<EmailSender>(c => c.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddHttpClient<EmailSender>(c => c.Timeout = TimeSpan.FromSeconds(15))
+    .RedactLoggedHeaders(_ => true);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<ExpiryCleanup>();
@@ -44,6 +45,8 @@ builder.Services.AddRateLimiter(o =>
 });
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 16384);
 var app = builder.Build();
+if (!development && !builder.Configuration.GetSection("Proxy:KnownProxies").GetChildren().Any())
+    app.Logger.LogWarning("No explicit trusted proxies configured. Verify client IP forwarding before expanding traffic; users behind a proxy may share rate limits.");
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDb>();
@@ -81,8 +84,8 @@ app.Use(async (h, next) =>
     }
     catch (ApiError ex) { h.Response.StatusCode = ex.Status; await h.Response.WriteAsJsonAsync(new { error = ex.Message }); }
     catch (DbUpdateConcurrencyException) { h.Response.StatusCode = 409; await h.Response.WriteAsJsonAsync(new { error = "This record changed. Reload and try again." }); }
-    catch (DbUpdateException ex) { app.Logger.LogWarning(ex, "Database write conflict"); h.Response.StatusCode = 409; await h.Response.WriteAsJsonAsync(new { error = "Could not save this change. Reload and try again." }); }
-    catch (Exception ex) when (ex is not OperationCanceledException) { app.Logger.LogError(ex, "Request failed"); h.Response.StatusCode = 500; await h.Response.WriteAsJsonAsync(new { error = "The service is temporarily unavailable. Please try again." }); }
+    catch (DbUpdateException ex) { app.Logger.LogWarning("Database write conflict ({ErrorType}); trace {TraceId}", ex.GetType().Name, h.TraceIdentifier); h.Response.StatusCode = 409; await h.Response.WriteAsJsonAsync(new { error = "Could not save this change. Reload and try again." }); }
+    catch (Exception ex) when (ex is not OperationCanceledException) { app.Logger.LogError("Request failed ({ErrorType}); trace {TraceId}", ex.GetType().Name, h.TraceIdentifier); h.Response.StatusCode = 500; await h.Response.WriteAsJsonAsync(new { error = "The service is temporarily unavailable. Please try again." }); }
 });
 app.UseForwardedHeaders();
 app.UseRateLimiter();

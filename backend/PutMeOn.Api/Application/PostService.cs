@@ -107,6 +107,26 @@ public sealed class PostService(AppDb db, Rules rules, TimeProvider clock)
     }
     public async Task ApplyAsync(Account a, string id, CancellationToken ct)
     {
+        // Keep the post revision guard against concurrent edits/deletion, but retry
+        // independent applicants against the latest post instead of rejecting them.
+        for (var attempt = 0; ; attempt++)
+        {
+            try { await ApplyOnceAsync(a, id, ct); return; }
+            catch (DbUpdateConcurrencyException) when (attempt < 7)
+            {
+                db.ChangeTracker.Clear();
+                await Task.Delay(TimeSpan.FromMilliseconds(10 * (attempt + 1)), ct);
+            }
+            catch (DbUpdateException)
+            {
+                db.ChangeTracker.Clear();
+                if (await db.Applications.AnyAsync(x => x.PostId == id && x.ApplicantId == a.Id, ct)) return;
+                throw;
+            }
+        }
+    }
+    private async Task ApplyOnceAsync(Account a, string id, CancellationToken ct)
+    {
         Rules.Completed(a);
         var now = Now;
         var p = await db.Posts.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, ct) ?? throw new ApiError(404, "Post not found or expired.");

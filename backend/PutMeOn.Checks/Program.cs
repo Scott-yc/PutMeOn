@@ -6,6 +6,8 @@ using PutMeOn.Api.Application;
 
 await EmailChecks.RunAsync();
 await AuthChecks.RunAsync();
+await PostgresChecks.RunAsync();
+await ConcurrencyChecks.RunAsync();
 
 await using var connection = new SqliteConnection("Data Source=:memory:");
 await connection.OpenAsync();
@@ -21,6 +23,23 @@ var request = new PostRequest("looking", "Carpenter", "Brisbane", "Company", 55,
 var id = await service.SavePostAsync(owner, null, request, default);
 await service.ApplyAsync(applicant, id, default);
 var post = await db.Posts.SingleAsync(p => p.Id == id);
+// Feed responses must never include another person's private contact fields.
+foreach (var viewer in new[] { owner, applicant })
+{
+    var snapshot = System.Text.Json.JsonSerializer.SerializeToElement(await service.StateAsync(viewer, "feed", null, null, null, null, 0, default));
+    foreach (var profile in snapshot.GetProperty("profiles").EnumerateArray())
+        if (profile.GetProperty("Id").GetString() != viewer.Id &&
+            (profile.GetProperty("email").GetString() != "" || profile.GetProperty("phone").GetString() != ""))
+            throw new Exception("Feed exposed another user's private contact fields.");
+}
+var outsider = new Account { Email = "outsider@example.com", Name = "Outsider", Phone = "0400000000", Trade = "Carpenter", Location = "Brisbane" };
+try { await service.ContactAsync(outsider, id, applicant.Id, default); throw new Exception("Unrelated user accessed applicant contact."); } catch (ApiError e) when (e.Status == 403) { }
+try { await service.ContactAsync(applicant, id, owner.Id, default); throw new Exception("Applicant accessed restricted poster contact."); } catch (ApiError e) when (e.Status == 403) { }
+var permittedContact = System.Text.Json.JsonSerializer.SerializeToElement(await service.ContactAsync(owner, id, applicant.Id, default));
+if (permittedContact.GetProperty("email").GetString() != applicant.Email) throw new Exception("Authorized applicant contact missing.");
+var outsiderPost = System.Text.Json.JsonSerializer.SerializeToElement(PostService.PostDto(post, outsider.Id));
+if (outsiderPost.GetProperty("interested").GetArrayLength() != 0) throw new Exception("Applicant identities exposed to unrelated user.");
+Console.WriteLine("Privacy checks passed: feed contact redaction, restricted contact authorization and applicant identity isolation.");
 async Task<int> Unread(Account a) {
     var state = System.Text.Json.JsonSerializer.SerializeToElement(await service.StateAsync(a, "feed", null, "Plumber", null, null, 0, default));
     return state.GetProperty("unreadInterestCount").GetInt32();
